@@ -110,13 +110,13 @@
     	margin-left:0.2em;
     	margin-bottom:0.2em;
 /*      font-weight:bold;*/
-    	font-size:1.4em;
+    	font-size:2.4em;
     }
     .SousRubrique{
     	color:#0000C3;
 /*      font-weight:bold;*/
     	margin-left:0.4em;
-    	font-size:1.2em;
+    	font-size:1.8em;
     }
 
     /* Classe le dl qui contient chaque publication */
@@ -162,7 +162,7 @@
     .ValeurRes a{
     	color:#3c4258;
     	text-decoration:underline;
-    	font-size: 1em;
+    	font-size: 1.6em;
     }
     .ValeurResAvecVignette {
     	margin-left:220px; 
@@ -226,3 +226,4 @@
     .LienBibtexACoteFulltext{
     margin-left:1em;
     }
+    
