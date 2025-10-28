@@ -881,4 +881,27 @@ span.single-timeline-horizontal.spacial-horizontal-line {width: 88px;}
     0%   {bottom:0px;}
     100%  {bottom:7px;}
 }
-/*========================Thank you=================
+/*-------------------------------------
+        Publications (Custom)
+--------------------------------------*/
+#Publications {
+    padding: 120px 0 80px; /* removes the need for <br> spacing */
+    background: #ffffff;
+}
+
+.container_publications {
+    width: 90%;
+    max-width: 1400px;
+    height: 85vh; /* Takes most of screen height */
+    margin: 0 auto; /* Horizontal centering */
+    display: flex;
+    justify-content: center;
+    align-items: center; /* Vertical centering */
+    overflow: hidden; /* Clean rounded corners for content */
+}
+
+.container_publications object {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
