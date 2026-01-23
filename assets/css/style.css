@@ -39,7 +39,7 @@ font-family: 'Poppins', sans-serif;
 }
 body{
 	font-family: 'Poppins', sans-serif;
-	font-size:16px;
+	font-size:14px;
 	color: #676a81;
 	background: #fff;
     max-width:1920px;
@@ -885,23 +885,34 @@ span.single-timeline-horizontal.spacial-horizontal-line {width: 88px;}
         Publications (Custom)
 --------------------------------------*/
 #Publications {
-    padding: 120px 0 80px; /* removes the need for <br> spacing */
+    padding: 120px 0 80px;
     background: #ffffff;
 }
 
 .container_publications {
-    width: 90%;
-    max-width: 1400px;
-    height: 85vh; /* Takes most of screen height */
-    margin: 0 auto; /* Horizontal centering */
-    display: flex;
-    justify-content: center;
-    align-items: center; /* Vertical centering */
-    overflow: hidden; /* Clean rounded corners for content */
+    width: 80%;
+    max-width: 1000px;
+    /* CHANGE 1: Remove fixed height so it grows with the list */
+    height: auto; 
+    min-height: 50vh; 
+    
+    margin: 0 auto;
+    
+    /* CHANGE 2: Remove flex-centering which can cause weird alignment for long lists */
+    display: block; 
+    
+    /* CHANGE 3: Allow the page to scroll naturally */
+    overflow: visible; 
 }
 
-.container_publications object {
-    width: 100%;
-    height: 100%;
-    border: none;
+/* Optional: Add some styling for the injected HAL list */
+#res_script {
+    padding: 20px 0;
+}
+
+/* Ensure images/links in the list don't break layout */
+.NoticeRes {
+    margin-bottom: 20px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 15px;
 }
