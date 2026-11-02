@@ -32,12 +32,8 @@ MAIN_TYPE_MAPPING = {"ART": "Journal articles", "COMM": "Conference papers", "PO
 SUB_TYPE_MAPPING = {"PREPRINT": "Preprints", "WORKINGPAPER": "Preprints"}
 DEFAULT_CAT = "Talks & presentations"  # anciennement « Documents associated with scientific events »
 
-# Blocs de la page : (titre, catégories). Un bloc sans document n'est pas affiché.
-SECTIONS = [
-    ("Peer-reviewed publications", ["Journal articles", "Conference papers"]),
-    ("Preprints", ["Preprints"]),
-    ("Posters & talks", ["Posters", "Talks & presentations"]),
-]
+# Ordre d'affichage des types ; un type sans document n'est pas affiché.
+CATEGORY_ORDER = ["Journal articles", "Conference papers", "Preprints", "Posters", "Talks & presentations"]
 
 # « Nom de la revue ou conférence, Apr 2026, Lieu… » : seul le nom est mis en italique
 VENUE_SPLIT = re.compile(r"^(.*?),\s*((?:[A-Z][a-z]{2}\s)?\d{4}\b.*)$", re.S)
@@ -137,29 +133,19 @@ def render_page(docs, template_path=TEMPLATE_FILE, output_path=OUTPUT_FILE):
         raise ValueError("Le modèle ne contient pas <div class=\"container_publications\">")
     container.clear()
 
-    docs = sorted(docs, key=lambda d: d.get("producedDate_tdate", ""), reverse=True)
-    for section_title, cats in SECTIONS:
-        years = defaultdict(lambda: defaultdict(list))
-        for doc in docs:
-            cat = get_category(doc)
-            if cat in cats:
-                years[doc.get("producedDateY_i") or 0][cat].append(doc)
-        if not years:
+    # Plus récent d'abord (année, puis date complète quand HAL la fournit)
+    docs = sorted(docs, key=lambda d: (d.get("producedDateY_i") or 0, d.get("producedDate_tdate", "")), reverse=True)
+    by_cat = defaultdict(list)
+    for doc in docs:
+        by_cat[get_category(doc)].append(doc)  # l'ordre du tri est conservé dans chaque type
+
+    for cat in CATEGORY_ORDER:
+        if cat not in by_cat:
             continue
-        h2 = soup.new_tag("h2", attrs={"class": "PartieRes"}); h2.string = section_title
+        h2 = soup.new_tag("h2", attrs={"class": "Rubrique"}); h2.string = cat
         container.append(h2)
-        for year in sorted(years, reverse=True):  # clés toutes entières : tri sûr
-            p = soup.new_tag("p", attrs={"class": "Rubrique"})
-            p.string = str(year) if year else "Undated"
-            container.append(p)
-            for cat in cats:
-                if cat not in years[year]:
-                    continue
-                if len(cats) > 1:
-                    sp = soup.new_tag("p", attrs={"class": "SousRubrique"}); sp.string = cat
-                    container.append(sp)
-                for doc in years[year][cat]:
-                    container.append(create_publication_dl(soup, doc))
+        for doc in by_cat[cat]:
+            container.append(create_publication_dl(soup, doc))
 
     tmp = output_path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
