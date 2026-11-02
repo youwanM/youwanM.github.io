@@ -1,157 +1,192 @@
-import requests
+#!/usr/bin/env python3
+"""Génère publications.html à partir de HAL (idHAL « youwan »).
+
+Usage : python query_HAL.py
+Le modèle est publications_empty.html ; la page existante n'est jamais
+écrasée si HAL est injoignable ou ne renvoie aucun résultat.
+"""
 import os
-from bs4 import BeautifulSoup
+import re
+import sys
 from collections import defaultdict
 
-# --- CONFIGURATION ---
+import requests
+from bs4 import BeautifulSoup
+
 TEMPLATE_FILE = "publications_empty.html"
 OUTPUT_FILE = "publications.html"
+IDHAL = "youwan"
+ME = "Youwan Mahé"  # affiché en gras dans les listes d'auteurs
 
-# Added docSubType_s to the field list
-HAL_API_URL = (
-    "https://api.archives-ouvertes.fr/search/?"
-    "q=authIdHal_s:youwan&"
-    "sort=producedDateY_i desc, docType_s asc&"
-    "rows=1000&"
-    "fl=title_s,authFullName_s,producedDateY_i,docType_s,docSubType_s,label_s,uri_s,files_s,halId_s&"
-    "wt=json"
-)
-
-# REVISED CATEGORY MAPPING
-# We will check docType_s first, but override based on docSubType_s
-MAIN_TYPE_MAPPING = {
-    "ART": "Journal articles",
-    "COMM": "Conference papers",
-    "POSTER": "Posters",
+HAL_API_URL = "https://api.archives-ouvertes.fr/search/"
+HAL_PARAMS = {
+    "q": f"authIdHal_s:{IDHAL}",
+    "sort": "producedDate_tdate desc",
+    "rows": 1000,
+    "fl": ("title_s,authFullName_s,producedDateY_i,producedDate_tdate,docType_s,"
+           "docSubType_s,label_s,uri_s,files_s,halId_s,doiId_s,language_s"),
+    "wt": "json",
 }
 
-SUB_TYPE_MAPPING = {
-    "PREPRINT": "Preprints",
-    "WORKINGPAPER": "Preprints",
-}
+MAIN_TYPE_MAPPING = {"ART": "Journal articles", "COMM": "Conference papers", "POSTER": "Posters"}
+SUB_TYPE_MAPPING = {"PREPRINT": "Preprints", "WORKINGPAPER": "Preprints"}
+DEFAULT_CAT = "Talks & presentations"  # anciennement « Documents associated with scientific events »
 
-DEFAULT_CAT = "Documents associated with scientific events"
-
-CATEGORY_ORDER = [
-    "Journal articles",
-    "Conference papers",
-    "Posters",
-    "Preprints",
-    "Documents associated with scientific events"
+# Blocs de la page : (titre, catégories). Un bloc sans document n'est pas affiché.
+SECTIONS = [
+    ("Peer-reviewed publications", ["Journal articles", "Conference papers"]),
+    ("Preprints", ["Preprints"]),
+    ("Posters & talks", ["Posters", "Talks & presentations"]),
 ]
 
+# « Nom de la revue ou conférence, Apr 2026, Lieu… » : seul le nom est mis en italique
+VENUE_SPLIT = re.compile(r"^(.*?),\s*((?:[A-Z][a-z]{2}\s)?\d{4}\b.*)$", re.S)
+
+
 def get_category(doc):
-    """Logic to determine category based on Type and SubType."""
-    doc_type = doc.get('docType_s')
-    doc_sub_type = doc.get('docSubType_s') # List or string depending on API response
-
-    # Handle if docSubType_s is a list (HAL sometimes returns it as such)
-    sub_type = doc_sub_type[0] if isinstance(doc_sub_type, list) else doc_sub_type
-
-    # 1. Check SubType first (Preprints/Working Papers)
-    if sub_type in SUB_TYPE_MAPPING:
-        return SUB_TYPE_MAPPING[sub_type]
-    
-    # 2. Check specific check for PREPRINT docType if subtype is missing
-    if doc_type == "PREPRINT":
+    sub = doc.get("docSubType_s")
+    sub = sub[0] if isinstance(sub, list) else sub
+    if sub in SUB_TYPE_MAPPING:
+        return SUB_TYPE_MAPPING[sub]
+    if doc.get("docType_s") == "PREPRINT":
         return "Preprints"
+    return MAIN_TYPE_MAPPING.get(doc.get("docType_s"), DEFAULT_CAT)
 
-    # 3. Check Main Type Mapping
-    if doc_type in MAIN_TYPE_MAPPING:
-        return MAIN_TYPE_MAPPING[doc_type]
 
-    # 4. Fallback
-    return DEFAULT_CAT
+def first(value, default=""):
+    if isinstance(value, list):
+        return value[0] if value else default
+    return value or default
 
-def build_page():
-    print(f"🚀 Calling: {HAL_API_URL}")
-    try:
-        response = requests.get(HAL_API_URL)
-        docs = response.json().get('response', {}).get('docs', [])
-    except Exception as e:
-        print(f"❌ Error: {e}")
-        return
 
-    # Grouping
-    grouped_data = defaultdict(lambda: defaultdict(list))
-    for doc in docs:
-        year = doc.get('producedDateY_i', "Unknown")
-        cat_label = get_category(doc)
-        grouped_data[year][cat_label].append(doc)
+def venue_parts(doc, title):
+    """Sépare le libellé HAL en (nom du support, reste), sans id HAL ni DOI."""
+    label = BeautifulSoup(doc.get("label_s", ""), "html.parser").get_text()
+    details = label.split(title)[-1] if title and title in label else label
+    details = re.sub(r"\s*⟨hal-[^⟩]*⟩", "", details)  # déjà présent dans les liens
+    details = re.sub(r"\s*⟨10\.[^⟩]*⟩", "", details)  # le DOI est ajouté proprement ensuite
+    details = details.strip(". ")
+    m = VENUE_SPLIT.match(details)
+    if not m:
+        return details, ""
+    rest = re.sub(r"\.\s*\d{4}$", "", m.group(2).strip(". "))  # « …, France. 2026 » : année déjà indiquée
+    return m.group(1), rest
 
-    # HTML Construction
-    if not os.path.exists(TEMPLATE_FILE): return
-    with open(TEMPLATE_FILE, "r", encoding="utf-8") as f:
-        main_soup = BeautifulSoup(f, "html.parser")
 
-    container = main_soup.find("div", class_="container_publications")
-    container.clear()
+def link(soup, href, text, **attrs):
+    a = soup.new_tag("a", href=href, target="_blank", rel="noopener", **attrs)
+    a.string = text
+    return a
 
-    for year in sorted(grouped_data.keys(), reverse=True):
-        year_p = main_soup.new_tag("p", attrs={"class": "Rubrique"})
-        year_p.string = str(year)
-        container.append(year_p)
-
-        year_cats = grouped_data[year]
-        for cat_name in CATEGORY_ORDER:
-            if cat_name in year_cats:
-                sub_p = main_soup.new_tag("p", attrs={"class": "SousRubrique"})
-                sub_p.string = cat_name
-                container.append(sub_p)
-
-                for doc in year_cats[cat_name]:
-                    dl = create_publication_dl(main_soup, doc)
-                    container.append(dl)
-
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        f.write(str(main_soup))
-    print(f"✅ Success! Generated {OUTPUT_FILE}")
 
 def create_publication_dl(soup, doc):
     dl = soup.new_tag("dl", attrs={"class": "NoticeRes"})
-    
-    # Title
-    dt_t = soup.new_tag("dt", attrs={"class": "ChampRes"})
-    dt_t.string = "titre"
+    title = first(doc.get("title_s"))
+    uri = doc.get("uri_s", "")
+
+    dt_t = soup.new_tag("dt", attrs={"class": "ChampRes"}); dt_t.string = "titre"
     dd_t = soup.new_tag("dd", attrs={"class": "ValeurRes Titre"})
-    a_t = soup.new_tag("a", href=doc.get('uri_s'), target="_blank")
-    a_t.string = doc.get('title_s', [''])[0]
-    dd_t.append(a_t)
-    
-    # Authors
-    dt_a = soup.new_tag("dt", attrs={"class": "ChampRes"})
-    dt_a.string = "auteur"
+    if uri:
+        extra = {"lang": "fr"} if "fr" in (doc.get("language_s") or []) else {}
+        dd_t.append(link(soup, uri, title, **extra))
+    else:
+        dd_t.string = title
+
+    dt_a = soup.new_tag("dt", attrs={"class": "ChampRes"}); dt_a.string = "auteur"
     dd_a = soup.new_tag("dd", attrs={"class": "ValeurRes Auteurs"})
-    dd_a.string = ", ".join(doc.get('authFullName_s', []))
+    for i, name in enumerate(doc.get("authFullName_s", [])):
+        if i:
+            dd_a.append(", ")
+        if name.strip() == ME:
+            b = soup.new_tag("b"); b.string = name; dd_a.append(b)
+        else:
+            dd_a.append(name)
 
-    # Article
-    dt_d = soup.new_tag("dt", attrs={"class": "ChampRes"})
-    dt_d.string = "article"
+    dt_d = soup.new_tag("dt", attrs={"class": "ChampRes"}); dt_d.string = "article"
     dd_d = soup.new_tag("dd", attrs={"class": "ValeurRes article"})
-    full_label = doc.get('label_s', '')
-    title_text = doc.get('title_s', [''])[0]
-    details = full_label.split(title_text)[-1].strip(". ") if title_text in full_label else full_label
-    venue_i = soup.new_tag("i")
-    venue_i.append(BeautifulSoup(details, "html.parser"))
-    dd_d.append(venue_i)
+    venue, rest = venue_parts(doc, title)
+    if venue:
+        i_tag = soup.new_tag("i"); i_tag.string = venue; dd_d.append(i_tag)
+    if rest:
+        dd_d.append(", " + rest)
+    doi = first(doc.get("doiId_s"))
+    if doi:
+        dd_d.append(". ")
+        dd_d.append(link(soup, f"https://doi.org/{doi}", f"doi:{doi}"))
 
-    # Links
-    dt_l = soup.new_tag("dt", attrs={"class": "ChampRes"})
-    dt_l.string = "Accès au texte intégral et bibtex"
+    dt_l = soup.new_tag("dt", attrs={"class": "ChampRes"}); dt_l.string = "Accès au texte intégral et bibtex"
     dd_l = soup.new_tag("dd", attrs={"class": "ValeurRes Fichier_joint"})
-    
-    if doc.get('files_s'):
-        pdf_a = soup.new_tag("a", href=doc['files_s'][0], target="_blank")
-        pdf_a.string = "[PDF]"
-        dd_l.append(pdf_a); dd_l.append(" ") 
-
-    hal_id = doc.get('halId_s') or doc.get('uri_s', '').split('/')[-1].split('v')[0]
-    bib_a = soup.new_tag("a", href=f"https://hal.science/{hal_id}/bibtex", target="_blank")
-    bib_a.string = "[BibTeX]"
-    dd_l.append(bib_a)
+    if doc.get("files_s"):
+        dd_l.append(link(soup, doc["files_s"][0], "[PDF]"))
+        dd_l.append(" ")
+    hal_id = doc.get("halId_s") or re.sub(r"v\d+$", "", uri.rsplit("/", 1)[-1])
+    if hal_id:
+        dd_l.append(link(soup, f"https://hal.science/{hal_id}/bibtex", "[BibTeX]"))
 
     dl.extend([dt_t, dd_t, dt_a, dd_a, dt_d, dd_d, dt_l, dd_l])
     return dl
 
+
+def render_page(docs, template_path=TEMPLATE_FILE, output_path=OUTPUT_FILE):
+    if not os.path.exists(template_path):
+        raise FileNotFoundError(f"Modèle introuvable : {template_path}")
+    with open(template_path, encoding="utf-8") as f:
+        soup = BeautifulSoup(f, "html.parser")
+    container = soup.find("div", class_="container_publications")
+    if container is None:
+        raise ValueError("Le modèle ne contient pas <div class=\"container_publications\">")
+    container.clear()
+
+    docs = sorted(docs, key=lambda d: d.get("producedDate_tdate", ""), reverse=True)
+    for section_title, cats in SECTIONS:
+        years = defaultdict(lambda: defaultdict(list))
+        for doc in docs:
+            cat = get_category(doc)
+            if cat in cats:
+                years[doc.get("producedDateY_i") or 0][cat].append(doc)
+        if not years:
+            continue
+        h2 = soup.new_tag("h2", attrs={"class": "PartieRes"}); h2.string = section_title
+        container.append(h2)
+        for year in sorted(years, reverse=True):  # clés toutes entières : tri sûr
+            p = soup.new_tag("p", attrs={"class": "Rubrique"})
+            p.string = str(year) if year else "Undated"
+            container.append(p)
+            for cat in cats:
+                if cat not in years[year]:
+                    continue
+                if len(cats) > 1:
+                    sp = soup.new_tag("p", attrs={"class": "SousRubrique"}); sp.string = cat
+                    container.append(sp)
+                for doc in years[year][cat]:
+                    container.append(create_publication_dl(soup, doc))
+
+    tmp = output_path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        f.write(str(soup))
+    os.replace(tmp, output_path)  # écriture atomique
+    return len(docs)
+
+
+def main():
+    try:
+        r = requests.get(HAL_API_URL, params=HAL_PARAMS, timeout=20)
+        r.raise_for_status()
+        docs = r.json().get("response", {}).get("docs", [])
+    except (requests.RequestException, ValueError) as e:
+        print(f"❌ HAL injoignable ou réponse invalide : {e}\n   {OUTPUT_FILE} n'a pas été modifié.")
+        return 1
+    if not docs:
+        print(f"⚠️ HAL n'a renvoyé aucun document : {OUTPUT_FILE} n'a pas été modifié.")
+        return 1
+    try:
+        n = render_page(docs)
+    except (OSError, ValueError) as e:
+        print(f"❌ {e}")
+        return 1
+    print(f"✅ {OUTPUT_FILE} généré ({n} documents)")
+    return 0
+
+
 if __name__ == "__main__":
-    build_page()
+    sys.exit(main())

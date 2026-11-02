@@ -1,0 +1,42 @@
+/* custom.css : chargé en dernier (après responsive.css).
+   Corrections et ajouts ; style.css et responsive.css ne sont pas modifiés. */
+:root { --blue:#0000C3; --muted:#5f657c; }   /* #5f657c = 5,8:1 sur blanc (WCAG AA) */
+
+/* Liens : inline (retour à la ligne normal), soulignés dans le texte, focus visible */
+a, a:hover, a:active, a:focus { display:inline; }
+section p a, section dd a { text-decoration:underline; text-underline-offset:2px; }
+a:focus-visible { outline:3px solid currentColor; outline-offset:3px; }
+button:focus-visible { outline:3px solid var(--blue) !important; outline-offset:3px; }
+
+/* Titres : vrais niveaux, pas de capitalisation forcée */
+h1, h2, h3 { text-transform:none; }
+.section-heading h1 { font-size:24px; font-weight:600; text-transform:uppercase; padding-bottom:50px; }
+.container h3 { font-size:18px; font-weight:600; margin:1.5em 0 .3em; }
+.container h2.subsection { font-size:20px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:#3c4258; margin:2em 0 .8em; }
+
+/* Navigation : page courante, hamburger aux couleurs du site, menu mobile sans hauteur fixe */
+nav.navbar.bootsnav ul.nav > li > a.active { color:var(--blue); text-decoration:underline; text-decoration-thickness:2px; text-underline-offset:8px; }
+nav.navbar.bootsnav .navbar-toggle { border-color:var(--blue); }
+nav.navbar.bootsnav .navbar-toggle i { color:var(--blue); }
+.menu-ui-design { height:auto; max-height:350px; overflow-y:auto; }
+
+/* Décalage sous la navbar fixe (remplace les <br>) */
+.page-section { padding:130px 0 60px; }
+.page-section .about-content { padding-top:0; }
+
+/* Accueil */
+.single-about-txt h1 { font-size:18px; color:#3c4258; line-height:1.8; }
+.single-about-txt h1, .single-about-txt p { text-align:left; }
+.about-list-icon .fa-envelope { font-size:14px; }
+.about-list-icon .fa-graduation-cap { font-size:13px; }
+
+/* Contrastes */
+.single-about-txt p { color:var(--muted); }
+.hm-footer-copyright p, .hm-footer-copyright p a { color:var(--muted); text-transform:none; }
+
+/* Curriculum */
+a.btn-download, a.btn-download:hover { display:inline-block; padding:10px 22px; border-radius:4px; background:var(--blue); color:#fff; text-decoration:none; margin-bottom:20px; }
+a.btn-download:hover { box-shadow:0 5px 20px rgba(0,0,0,.25); }
+.cv-embed { width:100%; height:75vh; min-height:500px; border:0; }
+
+@media (prefers-reduced-motion:reduce) { #scroll-Top .return-to-top i { animation:none; } }

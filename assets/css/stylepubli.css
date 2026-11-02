@@ -1,206 +1,23 @@
-   #page-wrap { width: 800px; margin: 40px auto 60px; }
-   #pic { float: right; margin: -30px 0 0 0; }
-    dt { float: none;}
-    dd { float: none;}
-   dt.ChampRes { display:none;  float: left;         }
-    /*dd.ValeurRes a { float:left; color:blue; }*/
-    /* css HAL*/
-    /* classe css de la page*/
-    /*#res_script{
-    	/*border:0;
-    	background-color:white;
-    	color:black;
-    }*/
+/* Liste des publications (HTML généré par query_HAL.py).
+   Remplace l'ancien stylepubli.css : les classes HAL inutilisées ont été retirées. */
+.pub-intro { text-align:center; font-size:15px; color:#5f657c; margin:-20px 0 30px; }
+.container_publications { font-size:15px; }
+dt.ChampRes { display:none; }
 
-    /*Titre*/
-    div.ZoneTitreResultat
-    {
-    	display:none;
-    }
+.PartieRes   { font-size:22px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:#3c4258; margin:2.2em 0 .2em; }
+.Rubrique    { font-size:26px; font-weight:700; color:#0000C3; margin:1.2em 0 .5em; padding-bottom:.15em; border-bottom:1px solid #e5ebf2; }
+.SousRubrique{ font-size:14px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:#5f657c; margin:1em 0 .5em; }
 
-    /* classe commune Ã  tous les champs affichÃ©s */ 
-    .ValeurRes {
-    	color:#999fb3;
-      margin-left:1em;
-      line-height: 1.6em;
-      font-size: 0.75em;
-    }
-    /* classe pour les auteurs */ 
-    .Auteurs {
-    }
-    /* classe pour les titres */ 
-    .Titre, .Titre a {
-       font-weight:bold;
-    	color:#0000C3;
-    }
+.NoticeRes { margin:0 0 1.1em; padding:0 0 .9em; border-bottom:1px solid #eee; }
+.NoticeRes dd { margin:0; font-size:15px; line-height:1.6; color:#5f657c; }
+.NoticeRes dd.Titre { font-size:18px; line-height:1.4; font-weight:600; }
+.NoticeRes dd.Titre a { font-size:inherit; font-weight:600; color:#0000C3; text-decoration:none; }
+.NoticeRes dd.Titre a:hover { text-decoration:underline; }
+.NoticeRes dd a { font-size:14px; color:#3c4258; text-decoration:underline; }
+.NoticeRes .Auteurs b { color:#3c4258; }
+.NoticeRes .Fichier_joint a { font-weight:600; margin-right:.9em; }
 
-    /* classe css de la page*/
-    #res_script{
-    	border:0px solid black;
-    	width:99%;
-    	font-size:0.8em;
-    	text-align:left;
-    	color:black;
-    	background-color:white;
-    }
-
-    /* Titre avec le rÃ©sumÃ© de la requete, le nb de publis, ...*/
-    div.ZoneTitreResultat
-    {
-    	padding-left:10px; 
-    	width:95%;
-    }
-    .TitreResultats{
-    	color:#3c4258;
-    	font-size: 1.4em;
-    	font-weight: bold;
-    }
-    .SousTitreResultats { 
-    	margin: 0px 0px 40px;
-    	font-size: 1.1em;
-    	color:#3c4258;
-        }
-    /* Zone pour afficher un message d'erreur*/
-    div.ZoneTitreErreur
-    {
-    	padding-left:10px; 
-    	width:95%;
-    }
-     /*Libelle du nombre de publications affichÃ©es*/
-    .LibelleNbPubli { 
-    	margin: 0px 0px 40px;
-    	font-size: 1.1em;
-    	color:#3c4258;
-     	font-weight: bold;
-    }
-     /*valeur du nombre de publications affichÃ©es*/
-    .ValeurNbPubli { 
-    	margin: 0px 0px 40px;
-    	font-size: 1.1em;
-    	color:#3c4258;
-     }
-
-    /* classes pour les rubriques pour certains type de classement (type de publi, annÃ©e de publi) */ 
-    .Rubrique{
-    	border: 0;
-    	color:#0000C3;
-    	margin-left:0.2em;
-    	margin-bottom:0.2em;
-      font-weight:bold;
-    	font-size:1.5em;
-    }
-    .SousRubrique{
-    	color:#0000C3;
-      font-weight:bold;
-    	margin-left:0.4em;
-    	/*font-size:1.8em;*/
-    }
-
-    /* Classe le dl qui contient chaque publication */
-    .NoticeRes {
-    	border: 0;
-    	padding-bottom: 0.5em;
-    	margin:0 0 1em;
-    }
-    .NoticeResAvecVignette {
-    	border: 0;
-    	padding-bottom: 0.5em;
-    	min-height:160px;
-    }
-
-    /*classe dt qui permmettent d'afficher les noms des champs */
-    .ChampRes {
-    	clear:both;
-    	/*float:left;*/
-    	text-align:left;
-      text-transform: capitalize;
-    	font-size:0.9em;
-    	font-weight:bold;
-    	width: 23%;
-    	margin-left:1em; 
-    	margin-bottom: 0em;
-    	margin-top: 0em;
-    	padding: 0em;
-    }
-    .ChampResAvecVignette {
-    	display:none;
-      width: 15%;
-      text-transform: capitalize;
-    	text-align:left;
-    	font-size:0.9em;
-    	color:#3c4258;
-    	font-weight:bold;
-    	margin-bottom: 0em;
-    	margin-top: 0em;
-    	padding: 0em;
-    	margin-left:120px; 
-    }
-
-    .ValeurRes a{
-    	color:#3c4258;
-    	text-decoration:underline;
-    	font-size: 0.85em;
-    }
-    .ValeurResAvecVignette {
-    	margin-left:220px; 
-      text-transform: capitalize;
-    	margin-bottom: 0em;
-    	margin-top: 0em;
-    	padding: 0em;
-    	text-align:left;
-    	font-size: 0.9em;
-    	font-size: 1em;
-    }
-    .ValeurResAvecVignette a{
-    	color:#3c4258;
-    	text-decoration:underline;
-    	font-size: 1em;
-    }
-    /* affichage des vignettes*/
-    .Vignette {
-      float: left;
-/*      clear:left;*/
-      padding-right:0em;
-      margin-left:0.5em;
-      }
-
-    .Vignette img{
-      border: 1px solid #000;
-    }
-
-      /*affichage des fichiers joints*/
-      .Fichier_joint{
-          /*border-style:solid;
-          border-width:5px;*/
-      }
-
-      /*affichage des fichiers joints*/
-      .Ref_biblio{
-          /*border-style:solid;
-          border-width:5px;*/
-      }
-
-    /*affichage des fichiers joints*/
-    .Fichier_joint a{
-        text-decoration:none;
-        border: 10px;
-    }
-
-    .LienBibtexACoteFulltext{
-    margin-left:1em;
-    }
-    /*mois de la confÃ©rence*/
-    .MoisConf{display:none;
-    }
-
-    .ref_biblio_hal a{
-    	text-decoration:none;
-    }
-    
-    /*lien vers le bibtex*/
-    .LienBibtex{
-    }
-    .LienBibtexACoteFulltext{
-    margin-left:1em;
-    }
-    
+@media (max-width:767px) {
+  .container_publications { width:92%; }
+  .Rubrique { font-size:22px; }
+}
